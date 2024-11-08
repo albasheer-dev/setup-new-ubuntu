@@ -44,7 +44,7 @@ Follow the prompts to select and configure the desired services.
 ```bash
 rsync -avz --progress /home/username/ user@new_server:/home/username/
 ```
-    * Use scp to transfer database files:
+   * Use scp to transfer database files:
 ```bash
 scp database_name.sql user@new_server:/path/to/destination
 ```
