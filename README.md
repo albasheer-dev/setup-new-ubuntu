@@ -88,7 +88,8 @@ During the script execution, you will be prompted for input such as:
 # Notes
 * Modify the script to suit your specific needs or server environment.
 * Always test the script in a staging environment before deploying it to production.
-Enjoy automating your server setup! 🎉
+
+# Enjoy automating your server setup! 🎉
 
 
 
