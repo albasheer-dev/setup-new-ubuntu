@@ -68,7 +68,7 @@ install_apache() {
         echo "Creating virtual host configuration for $USERNAME..."
         sudo bash -c "cat > $USER_VHOST_CONF" <<EOL
 <VirtualHost *:80>
-    ServerName $USERNAME.$DOMAIN_NAME
+    ServerName $DOMAIN_NAME
     DocumentRoot $PUBLIC_HTML
 
     <Directory $PUBLIC_HTML>
