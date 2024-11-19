@@ -62,7 +62,7 @@ install_apache() {
 
     USER_HOME="/home/$USERNAME"
     PUBLIC_HTML="$USER_HOME/public_html"
-    USER_VHOST_CONF="/etc/apache2/sites-available/$USERNAME.conf"
+    USER_VHOST_CONF="/etc/apache2/sites-available/$DOMAIN_NAME.conf"
 
     if [ ! -f "$USER_VHOST_CONF" ]; then
         echo "Creating virtual host configuration for $USERNAME..."
