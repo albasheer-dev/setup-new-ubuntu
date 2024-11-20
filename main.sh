@@ -112,6 +112,11 @@ EOL
         echo "$USER_VHOST_CONF already exists! Skipping..."
     fi
 
+    read -p "Do you want to disable apache default site? (yes/no): " DO_DISABLE_APACHE_DEFAULT_SITE
+    if [ "$DO_DISABLE_APACHE_DEFAULT_SITE" == "yes" ]; then
+           sudo a2dissite 000-default.conf
+    fi
+
     echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
     sudo a2ensite "$DOMAIN_NAME.conf"
     sudo systemctl restart apache2
@@ -157,10 +162,6 @@ EOL
 
     echo "Restarting PHP-FPM services..."
     sudo systemctl restart php$PHP_VERSION-fpm
-}
-
-disable_default_site() {
-    sudo a2dissite 000-default.conf
 }
 
 # Function to install Node.js
@@ -232,11 +233,6 @@ fi
 read -p "Do you want to install Apache? (yes/no): " DO_APACHE
 if [[ "$DO_APACHE" == "yes" ]]; then
     install_apache
-fi
-
-read -p "Do you want to disable apache default site? (yes/no): " DO_DISABLE_APACHE_DEFAULT_SITE
-if [[ "$DO_DISABLE_APACHE_DEFAULT_SITE" == "yes" ]]; then
-    disable_default_site
 fi
 
 read -p "Do you want to create new domain? (yes/no): " DO_CREATE_NEW_DOMAIN
