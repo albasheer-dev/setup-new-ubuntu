@@ -66,7 +66,6 @@ create_new_domain() {
 
     USER_HOME="/home/$USERNAME"
 
-    # Prompt the user for customizing the DocumentRoot path
     read -p "Do you want to use the default 'public_html' or add a custom subpath? [default/custom]: " PATH_CHOICE
     if [ "$PATH_CHOICE" == "custom" ]; then
         read -p "Enter the custom subpath inside 'public_html' (e.g., 'subfolder'): " SUBPATH
