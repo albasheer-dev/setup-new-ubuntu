@@ -55,6 +55,10 @@ install_apache() {
         echo "$USERDIR_CONF not found! Skipping..."
     fi
 
+    sudo systemctl restart apache2
+}
+
+create_new_domain() {
     # إعداد Virtual Host للمستخدم
     request_parameter "USERNAME" "Enter username"
     request_parameter "DOMAIN_NAME" "Enter domain name"
@@ -64,11 +68,22 @@ install_apache() {
     PUBLIC_HTML="$USER_HOME/public_html"
     USER_VHOST_CONF="/etc/apache2/sites-available/$DOMAIN_NAME.conf"
 
+    # تحديد إذا ما كان الدومين هو subdomain أم لا
+    DOMAIN_ROOT=$(echo "$DOMAIN_NAME" | awk -F. '{if (NF>2) print $(NF-1)"."$NF; else print $0}')
+
     if [ ! -f "$USER_VHOST_CONF" ]; then
         echo "Creating virtual host configuration for $USERNAME..."
         sudo bash -c "cat > $USER_VHOST_CONF" <<EOL
 <VirtualHost *:80>
     ServerName $DOMAIN_NAME
+EOL
+
+        # إضافة ServerAlias إذا لم يكن الدومين subdomain
+        if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
+            echo "    ServerAlias www.$DOMAIN_NAME" | sudo tee -a $USER_VHOST_CONF
+        fi
+
+        sudo bash -c "cat >> $USER_VHOST_CONF" <<EOL
     DocumentRoot $PUBLIC_HTML
 
     <Directory $PUBLIC_HTML>
@@ -89,8 +104,8 @@ EOL
         echo "$USER_VHOST_CONF already exists! Skipping..."
     fi
 
-    echo "Enabling the virtual host for $USERNAME and restarting Apache..."
-    sudo a2ensite "$USERNAME.conf"
+    echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
+    sudo a2ensite "$DOMAIN_NAME.conf"
     sudo systemctl restart apache2
 }
 
@@ -134,6 +149,10 @@ EOL
 
     echo "Restarting PHP-FPM services..."
     sudo systemctl restart php$PHP_VERSION-fpm
+}
+
+disable_default_site() {
+    sudo a2dissite 000-default.conf
 }
 
 # Function to install Node.js
@@ -207,6 +226,16 @@ if [[ "$DO_APACHE" == "yes" ]]; then
     install_apache
 fi
 
+read -p "Do you want to disable apache default site? (yes/no): " DO_DISABLE_APACHE_DEFAULT_SITE
+if [[ "$DO_DISABLE_APACHE_DEFAULT_SITE" == "yes" ]]; then
+    disable_default_site
+fi
+
+read -p "Do you want to create new domain? (yes/no): " DO_CREATE_NEW_DOMAIN
+if [[ "$DO_CREATE_NEW_DOMAIN" == "yes" ]]; then
+    create_new_domain
+fi
+
 read -p "Do you want to install PHP? (yes/no): " DO_PHP
 if [[ "$DO_PHP" == "yes" ]]; then
     install_php
@@ -233,6 +262,24 @@ if [[ "$DO_JENKINS" == "yes" ]]; then
 fi
 
 echo "Setup complete. Thank you!"
+
+
+# sudo apache2ctl configtest
+# sudo apt install certbot python3-certbot-apache
+# sudo certbot --apache -d albasheer.dev -d www.albasheer.dev
+# sudo systemctl restart apache2
+
+# this is in .htaccess in the same public_html
+# <IfModule mime_module>
+#   RewriteEngine On
+#   RewriteCond %{HTTP_HOST} !^albasheer\.dev$ [NC]
+#   RewriteCond %{HTTP_HOST} !^www\.albasheer\.dev$ [NC]
+#   RewriteRule ^ - [F]
+#   DirectoryIndex index.php index.html
+# </IfModule>
+
+
+
 
 # to use this file 
 # chmod +x setup_server.sh
