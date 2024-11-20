@@ -65,7 +65,16 @@ create_new_domain() {
     request_parameter "PHP_VERSION" "Enter PHP version"
 
     USER_HOME="/home/$USERNAME"
-    PUBLIC_HTML="$USER_HOME/public_html"
+
+    # Prompt the user for customizing the DocumentRoot path
+    read -p "Do you want to use the default 'public_html' or add a custom subpath? [default/custom]: " PATH_CHOICE
+    if [ "$PATH_CHOICE" == "custom" ]; then
+        read -p "Enter the custom subpath inside 'public_html' (e.g., 'subfolder'): " SUBPATH
+        PUBLIC_HTML="$USER_HOME/public_html/$SUBPATH"
+    else
+        PUBLIC_HTML="$USER_HOME/public_html"
+    fi
+
     USER_VHOST_CONF="/etc/apache2/sites-available/$DOMAIN_NAME.conf"
 
     # تحديد إذا ما كان الدومين هو subdomain أم لا
