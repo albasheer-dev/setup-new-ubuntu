@@ -1,5 +1,6 @@
 #!/bin/bash
-
+LOG_FILE="/var/log/setup_script.log"
+exec > >(tee -a "$LOG_FILE") 2>&1
 # Variables to store user input
 USERNAME=""
 DOMAIN_NAME=""
@@ -16,20 +17,20 @@ request_parameter() {
         read -p "$prompt_message: " user_input
         eval "$var_name=\"$user_input\""
     else
-        echo "$var_name is already set to $current_value, skipping input."
+        echo "$var_name is already set to $current_value, skipping input." >&2
     fi
 }
 
 # Function to create a user
 create_user() {
     request_parameter "USERNAME" "Enter username"
-    echo "Creating user account: $USERNAME"
+    echo "Creating user account: $USERNAME" >&2
     sudo adduser --quiet $USERNAME
-    echo "Granting sudo privileges to $USERNAME"
+    echo "Granting sudo privileges to $USERNAME" >&2
     sudo usermod -aG sudo $USERNAME
-    echo "Creating public_html directory for $USERNAME"
+    echo "Creating public_html directory for $USERNAME" >&2
     sudo mkdir -p "/home/$USERNAME/public_html"
-    echo "Setting permissions for user home and public_html"
+    echo "Setting permissions for user home and public_html" >&2
     sudo chmod 755 "/home/$USERNAME"
     sudo chmod 755 "/home/$USERNAME/public_html"
     sudo chown $USERNAME:$USERNAME "/home/$USERNAME/public_html"
@@ -37,22 +38,22 @@ create_user() {
 
 # Function to install Apache
 install_apache() {
-    echo "Installing Apache..."
+    echo "Installing Apache..." >&2
     sudo apt update && sudo apt upgrade -y
     sudo apt install -y apache2
 
-    echo "Enabling necessary Apache modules..."
+    echo "Enabling necessary Apache modules..." >&2
     sudo a2enmod rewrite userdir proxy proxy_fcgi
-    echo "Apache modules enabled: rewrite, userdir, proxy, proxy_fcgi"
+    echo "Apache modules enabled: rewrite, userdir, proxy, proxy_fcgi" >&2
 
     # تعديل userdir.conf
     USERDIR_CONF="/etc/apache2/mods-enabled/userdir.conf"
     if [ -f "$USERDIR_CONF" ]; then
-        echo "Editing $USERDIR_CONF..."
+        echo "Editing $USERDIR_CONF..." >&2
         sudo sed -i 's/UserDir disabled/UserDir public_html/' "$USERDIR_CONF"
         sudo sed -i '/<Directory \/home\/*\/public_html>/,/<\/Directory>/c\<Directory /home/*/public_html>\n    AllowOverride All\n    Options Indexes FollowSymLinks\n    Require all granted\n</Directory>' "$USERDIR_CONF"
     else
-        echo "$USERDIR_CONF not found! Skipping..."
+        echo "$USERDIR_CONF not found! Skipping..." >&2
     fi
 
     sudo systemctl restart apache2
@@ -81,7 +82,7 @@ create_new_domain() {
     DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
 
     if [ ! -f "$USER_VHOST_CONF" ]; then
-        echo "Creating virtual host configuration for $USERNAME..."
+        echo "Creating virtual host configuration for $USERNAME..." >&2
         sudo bash -c "cat > $USER_VHOST_CONF" <<EOL
 <VirtualHost *:80>
     ServerName $DOMAIN_NAME
@@ -89,7 +90,7 @@ EOL
 
         # Add ServerAlias if the domain is not a subdomain
         if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
-            echo "    ServerAlias www.$DOMAIN_NAME" | sudo tee -a "$USER_VHOST_CONF"
+            echo "    ServerAlias www.$DOMAIN_NAME" | sudo tee -a "$USER_VHOST_CONF" >&2
         fi
 
         sudo bash -c "cat >> $USER_VHOST_CONF" <<EOL
@@ -110,10 +111,10 @@ EOL
 </VirtualHost>
 EOL
     else
-        echo "$USER_VHOST_CONF already exists! Skipping..."
+        echo "$USER_VHOST_CONF already exists! Skipping..." >&2
     fi
 
-    echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
+    echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..." >&2
     sudo a2ensite "$DOMAIN_NAME.conf"
     sudo systemctl restart apache2
 
@@ -121,7 +122,7 @@ EOL
     if [ "$SSL_CHOICE" == "yes" ]; then
         ssl_cert "$DOMAIN_NAME"
     else
-        echo "Skipping SSL certificate configuration."
+        echo "Skipping SSL certificate configuration." >&2
     fi
 }
 
@@ -136,16 +137,16 @@ ssl_cert() {
     DOMAIN_ROOT=$(get_domain_root "$domain_name")
 
     # Test Apache configuration
-    echo "Testing Apache configuration..."
+    echo "Testing Apache configuration..." >&2
     if ! sudo apache2ctl configtest; then
-        echo "Apache configuration test failed. Exiting the function."
+        echo "Apache configuration test failed. Exiting the function." >&2
         return 1  # Exit the function with an error code
     fi
 
     echo "Installing Certbot if not installed..."
     if ! command -v certbot &> /dev/null; then
         if ! sudo apt update; then
-            echo "Failed to update package list. Exiting."
+            echo "Failed to update package list. Exiting." >&2
             exit 1
         fi
         sudo apt install -y certbot python3-certbot-apache
@@ -154,12 +155,12 @@ ssl_cert() {
     # Generate SSL certificate
     if [ "$domain_name" == "$DOMAIN_ROOT" ]; then
         if ! sudo certbot --apache -d "$domain_name" -d "www.$domain_name"; then
-            echo "SSL certificate generation failed for $domain_name."
+            echo "SSL certificate generation failed for $domain_name." >&2
             return 1
         fi
     else
         if ! sudo certbot --apache -d "$domain_name"; then
-            echo "SSL certificate generation failed for $domain_name."
+            echo "SSL certificate generation failed for $domain_name." >&2
             return 1
         fi
     fi
@@ -177,11 +178,11 @@ install_php() {
     USER_HOME="/home/$USERNAME"
     PHP_POOL_CONF="/etc/php/$PHP_VERSION/fpm/pool.d/$USERNAME.conf"
 
-    echo "Installing PHP version $PHP_VERSION..."
+    echo "Installing PHP version $PHP_VERSION..." >&2
     sudo apt install -y software-properties-common
     sudo add-apt-repository ppa:ondrej/php -y
     if ! sudo apt update; then
-        echo "Failed to update package list. Exiting."
+        echo "Failed to update package list. Exiting." >&2
         exit 1
     fi
     sudo apt install php$PHP_VERSION php$PHP_VERSION-fpm php$PHP_VERSION-bz2 libapache2-mod-php$PHP_VERSION php$PHP_VERSION-cli php$PHP_VERSION-curl php$PHP_VERSION-gd php$PHP_VERSION-intl php$PHP_VERSION-mbstring php$PHP_VERSION-mysql php$PHP_VERSION-protobuf php$PHP_VERSION-sqlite3 php$PHP_VERSION-xml php$PHP_VERSION-zip php$PHP_VERSION-zstd -y
@@ -191,7 +192,7 @@ install_php() {
 
     # إنشاء ملف pool للمستخدم
     if [ ! -f "$PHP_POOL_CONF" ]; then
-        echo "Creating PHP-FPM pool configuration for $USERNAME..."
+        echo "Creating PHP-FPM pool configuration for $USERNAME..." >&2
         sudo bash -c "cat > $PHP_POOL_CONF" <<EOL
 [$USERNAME]
 user = $USERNAME
@@ -207,10 +208,10 @@ pm.max_requests = 200
 chdir = $USER_HOME
 EOL
     else
-        echo "$PHP_POOL_CONF already exists! Skipping..."
+        echo "$PHP_POOL_CONF already exists! Skipping..." >&2
     fi
 
-    echo "Restarting PHP-FPM services..."
+    echo "Restarting PHP-FPM services..." >&2
     sudo systemctl restart php$PHP_VERSION-fpm
 }
 
@@ -220,12 +221,12 @@ disable_default_site() {
 
 # Function to install Node.js
 install_node() {
-    echo "Select the Node.js version you want to install (e.g., 18, 20):"
+    echo "Select the Node.js version you want to install (e.g., 18, 20):" >&2
     read -p "Enter Node.js version: " NODE_VERSION
-    echo "Installing Node.js version $NODE_VERSION..."
+    echo "Installing Node.js version $NODE_VERSION..." >&2
     curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | sudo -E bash -
     sudo apt install -y nodejs
-    echo "Node.js and npm versions installed:"
+    echo "Node.js and npm versions installed:" >&2
     node -v
     npm -v
 }
@@ -233,12 +234,12 @@ install_node() {
 # Function to install MariaDB
 install_mariadb() {
     request_parameter "MARIADB_VERSION" "Enter MariaDB version"
-    echo "Installing MariaDB version $MARIADB_VERSION..."
+    echo "Installing MariaDB version $MARIADB_VERSION..." >&2
     sudo apt install software-properties-common -y
     sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
     sudo add-apt-repository "deb [arch=amd64,arm64,ppc64el] http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
     if ! sudo apt update; then
-        echo "Failed to update package list. Exiting."
+        echo "Failed to update package list. Exiting." >&2
         exit 1
     fi
     sudo apt install -y mariadb-server mariadb-client
@@ -248,42 +249,42 @@ install_mariadb() {
 
 # Function to install Composer
 install_composer() {
-    echo "install the following packages (composer dependencies)"
+    echo "install the following packages (composer dependencies)" >&2
     sudo apt install gzip tar unrar unzip -y
-    echo "Installing Composer..."
+    echo "Installing Composer..." >&2
     sudo php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     sudo php -r "if (hash_file('sha384', 'dac665fdc30fdd8ec78b38b9800061b4150413ff2e3b6f88543c636f7cd84f6db9189d43a81e5503cda447da73c7e5b6') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
     sudo php composer-setup.php
     sudo php -r "unlink('composer-setup.php');"
     sudo mv composer.phar /usr/local/bin/composer
-    echo "Composer installed successfully."
+    echo "Composer installed successfully." >&2
 }
 
 # Function to install Jenkins
 install_jenkins() {
-    echo "Installing Jenkins..."
+    echo "Installing Jenkins..." >&2
     sudo wget -O /usr/share/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
     echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
     if ! sudo apt update; then
-        echo "Failed to update package list. Exiting."
+        echo "Failed to update package list. Exiting." >&2
         exit 1
     fi
     sudo apt install -y jenkins
-    echo "Installing Java..."
+    echo "Installing Java..." >&2
     sudo apt install -y fontconfig openjdk-17-jre
     java -version
     sudo systemctl enable jenkins
     sudo systemctl start jenkins
-    echo "Fetching Jenkins initial admin password..."
+    echo "Fetching Jenkins initial admin password..." >&2
     sudo cat /var/lib/jenkins/secrets/initialAdminPassword
     echo -e "\nUse this password to complete Jenkins setup in your browser."
 }
 
 system_cleanup() {
-    echo "Cleaning up the system..."
+    echo "Cleaning up the system..." >&2
     sudo apt autoremove -y
     sudo apt autoclean
-    echo "System cleanup complete."
+    echo "System cleanup complete." >&2
 }
 
 # Main script logic
