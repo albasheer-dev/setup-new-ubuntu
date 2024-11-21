@@ -392,4 +392,7 @@ echo "Setup complete. Thank you!"
 # ./setup_server.sh
 
 # rsync -avz --progress /home/username/ user@new_server:/home/username/ 
+
+# mysqldump -u root -p database_name > database_name.sql
 # scp database_name.sql user@new_server:/path/to/destination
+# mysql -u root -p database_name < database_name.sql
