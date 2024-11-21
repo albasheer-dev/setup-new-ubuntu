@@ -387,20 +387,9 @@ echo "Setup complete. Thank you!"
 #   DirectoryIndex index.php index.html
 # </IfModule>
 
-
-
-
 # to use this file 
 # chmod +x setup_server.sh
 # ./setup_server.sh
 
-
 # rsync -avz --progress /home/username/ user@new_server:/home/username/ 
 # scp database_name.sql user@new_server:/path/to/destination
-
-
-
-
-
-
-# sudo chown -R ardv:ardv /home/ardv/public_html
