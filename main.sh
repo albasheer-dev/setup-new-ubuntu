@@ -396,3 +396,10 @@ echo "Setup complete. Thank you!"
 # mysqldump -u root -p database_name > database_name.sql
 # scp database_name.sql user@new_server:/path/to/destination
 # mysql -u root -p database_name < database_name.sql
+
+# https://patorjk.com/software/taag/ for ascii art
+# sudo nano /etc/motd
+# sudo nano /etc/hostname
+# sudo nano /etc/hosts
+# hostnamectl
+# sudo reboot
