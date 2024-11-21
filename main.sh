@@ -66,6 +66,7 @@ create_new_domain() {
 
     USER_HOME="/home/$USERNAME"
 
+    # Prompt to determine DocumentRoot path
     read -p "Do you want to use the default 'public_html' or add a custom subpath? [default/custom]: " PATH_CHOICE
     if [ "$PATH_CHOICE" == "custom" ]; then
         read -p "Enter the custom subpath inside 'public_html' (e.g., 'subfolder'): " SUBPATH
@@ -76,7 +77,7 @@ create_new_domain() {
 
     USER_VHOST_CONF="/etc/apache2/sites-available/$DOMAIN_NAME.conf"
 
-    # تحديد إذا ما كان الدومين هو subdomain أم لا
+    # Get the domain root
     DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
 
     if [ ! -f "$USER_VHOST_CONF" ]; then
@@ -86,9 +87,9 @@ create_new_domain() {
     ServerName $DOMAIN_NAME
 EOL
 
-        # إضافة ServerAlias إذا لم يكن الدومين subdomain
+        # Add ServerAlias if the domain is not a subdomain
         if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
-            echo "    ServerAlias www.$DOMAIN_NAME" | sudo tee -a $USER_VHOST_CONF
+            echo "    ServerAlias www.$DOMAIN_NAME" | sudo tee -a "$USER_VHOST_CONF"
         fi
 
         sudo bash -c "cat >> $USER_VHOST_CONF" <<EOL
@@ -114,29 +115,41 @@ EOL
 
     echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
     sudo a2ensite "$DOMAIN_NAME.conf"
-
-
     sudo systemctl restart apache2
 }
 
 get_domain_root() {
+    # Function to determine the root domain from a given domain name
     local domain_name=$1
     echo "$domain_name" | awk -F. '{if (NF>2) print $(NF-1)"."$NF; else print $0}'
 }
 
 ssl_cert() {
+    request_parameter "DOMAIN_NAME" "Enter domain name"
     DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
-    
-    sudo apache2ctl configtest
-    sudo apt install certbot python3-certbot-apache
+
+    # Test Apache configuration
+    echo "Testing Apache configuration..."
+    if ! sudo apache2ctl configtest; then
+        echo "Apache configuration test failed. Exiting the function."
+        return 1  # Exit the function with an error code
+    fi
+
+    # Install Certbot if not installed
+    sudo apt update
+    sudo apt install -y certbot python3-certbot-apache
+
+    # Generate SSL certificate
     if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
         sudo certbot --apache -d "$DOMAIN_NAME" -d "www.$DOMAIN_NAME"
     else
         sudo certbot --apache -d "$DOMAIN_NAME"
     fi
-    
+
+    # Restart Apache
     sudo systemctl restart apache2
 }
+
 
 # Function to install PHP
 install_php() {
