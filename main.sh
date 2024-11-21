@@ -119,7 +119,7 @@ EOL
 
     read -p "Do you want to configure an SSL certificate for this domain? [yes/no]: " SSL_CHOICE
     if [ "$SSL_CHOICE" == "yes" ]; then
-        ssl_cert
+        ssl_cert "$DOMAIN_NAME"
     else
         echo "Skipping SSL certificate configuration."
     fi
@@ -132,8 +132,8 @@ get_domain_root() {
 }
 
 ssl_cert() {
-    request_parameter "DOMAIN_NAME" "Enter domain name"
-    DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
+    local domain_name=$1
+    DOMAIN_ROOT=$(get_domain_root "$domain_name")
 
     # Test Apache configuration
     echo "Testing Apache configuration..."
@@ -147,10 +147,10 @@ ssl_cert() {
     sudo apt install -y certbot python3-certbot-apache
 
     # Generate SSL certificate
-    if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
-        sudo certbot --apache -d "$DOMAIN_NAME" -d "www.$DOMAIN_NAME"
+    if [ "$domain_name" == "$DOMAIN_ROOT" ]; then
+        sudo certbot --apache -d "$domain_name" -d "www.$domain_name"
     else
-        sudo certbot --apache -d "$DOMAIN_NAME"
+        sudo certbot --apache -d "$domain_name"
     fi
 
     # Restart Apache
@@ -287,7 +287,8 @@ fi
 
 read -p "Do you want to configure an SSL certificate for custom domain? [yes/no]: " SSL_CHOICE_2
 if [ "$SSL_CHOICE_2" == "yes" ]; then
-    ssl_cert
+    read -p "Enter your coustom domain name !" CUSTOM_DOMAIN_NAME
+    ssl_cert "$CUSTOM_DOMAIN_NAME"
 fi
 
 read -p "Do you want to install PHP? (yes/no): " DO_PHP
