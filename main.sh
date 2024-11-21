@@ -14,7 +14,7 @@ request_parameter() {
 
     if [ -z "$current_value" ]; then
         read -p "$prompt_message: " user_input
-        declare -g $var_name="$user_input"
+        eval "$var_name=\"$user_input\""
     else
         echo "$var_name is already set to $current_value, skipping input."
     fi
@@ -142,15 +142,26 @@ ssl_cert() {
         return 1  # Exit the function with an error code
     fi
 
-    # Install Certbot if not installed
-    sudo apt update
-    sudo apt install -y certbot python3-certbot-apache
+    echo "Installing Certbot if not installed..."
+    if ! command -v certbot &> /dev/null; then
+        if ! sudo apt update; then
+            echo "Failed to update package list. Exiting."
+            exit 1
+        fi
+        sudo apt install -y certbot python3-certbot-apache
+    fi
 
     # Generate SSL certificate
     if [ "$domain_name" == "$DOMAIN_ROOT" ]; then
-        sudo certbot --apache -d "$domain_name" -d "www.$domain_name"
+        if ! sudo certbot --apache -d "$domain_name" -d "www.$domain_name"; then
+            echo "SSL certificate generation failed for $domain_name."
+            return 1
+        fi
     else
-        sudo certbot --apache -d "$domain_name"
+        if ! sudo certbot --apache -d "$domain_name"; then
+            echo "SSL certificate generation failed for $domain_name."
+            return 1
+        fi
     fi
 
     # Restart Apache
@@ -169,7 +180,10 @@ install_php() {
     echo "Installing PHP version $PHP_VERSION..."
     sudo apt install -y software-properties-common
     sudo add-apt-repository ppa:ondrej/php -y
-    sudo apt update
+    if ! sudo apt update; then
+        echo "Failed to update package list. Exiting."
+        exit 1
+    fi
     sudo apt install php$PHP_VERSION php$PHP_VERSION-fpm php$PHP_VERSION-bz2 libapache2-mod-php$PHP_VERSION php$PHP_VERSION-cli php$PHP_VERSION-curl php$PHP_VERSION-gd php$PHP_VERSION-intl php$PHP_VERSION-mbstring php$PHP_VERSION-mysql php$PHP_VERSION-protobuf php$PHP_VERSION-sqlite3 php$PHP_VERSION-xml php$PHP_VERSION-zip php$PHP_VERSION-zstd -y
     sudo a2enmod php$PHP_VERSION
     sudo update-alternatives --set php /usr/bin/php$PHP_VERSION
@@ -223,7 +237,10 @@ install_mariadb() {
     sudo apt install software-properties-common -y
     sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
     sudo add-apt-repository "deb [arch=amd64,arm64,ppc64el] http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
-    sudo apt update
+    if ! sudo apt update; then
+        echo "Failed to update package list. Exiting."
+        exit 1
+    fi
     sudo apt install -y mariadb-server mariadb-client
     sudo mysql_secure_installation
     echo "MariaDB installed and secured."
@@ -247,7 +264,10 @@ install_jenkins() {
     echo "Installing Jenkins..."
     sudo wget -O /usr/share/keyrings/jenkins-keyring.asc https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
     echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/" | sudo tee /etc/apt/sources.list.d/jenkins.list > /dev/null
-    sudo apt update
+    if ! sudo apt update; then
+        echo "Failed to update package list. Exiting."
+        exit 1
+    fi
     sudo apt install -y jenkins
     echo "Installing Java..."
     sudo apt install -y fontconfig openjdk-17-jre
@@ -257,6 +277,13 @@ install_jenkins() {
     echo "Fetching Jenkins initial admin password..."
     sudo cat /var/lib/jenkins/secrets/initialAdminPassword
     echo -e "\nUse this password to complete Jenkins setup in your browser."
+}
+
+system_cleanup() {
+    echo "Cleaning up the system..."
+    sudo apt autoremove -y
+    sudo apt autoclean
+    echo "System cleanup complete."
 }
 
 # Main script logic
@@ -316,6 +343,11 @@ if [[ "$DO_JENKINS" == "yes" ]]; then
     install_jenkins
 fi
 
+read -p "Do you want to perform a system cleanup? (yes/no): " DO_CLEANUP
+if [[ "$DO_CLEANUP" == "yes" ]]; then
+    system_cleanup
+fi
+
 echo "Setup complete. Thank you!" 
 
 
@@ -338,3 +370,16 @@ echo "Setup complete. Thank you!"
 
 # rsync -avz --progress /home/username/ user@new_server:/home/username/ 
 # scp database_name.sql user@new_server:/path/to/destination
+
+# configure_firewall() {
+#     echo "Configuring UFW firewall..."
+#     sudo ufw allow OpenSSH
+#     sudo ufw allow 'Apache Full'
+#     sudo ufw enable
+#     echo "Firewall configured successfully."
+# }
+
+# read -p "Do you want to configure the firewall? (yes/no): " DO_FIREWALL
+# if [[ "$DO_FIREWALL" == "yes" ]]; then
+#     configure_firewall
+# fi
