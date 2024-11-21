@@ -116,6 +116,13 @@ EOL
     echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
     sudo a2ensite "$DOMAIN_NAME.conf"
     sudo systemctl restart apache2
+
+    read -p "Do you want to configure an SSL certificate for this domain? [yes/no]: " SSL_CHOICE
+    if [ "$SSL_CHOICE" == "yes" ]; then
+        ssl_cert
+    else
+        echo "Skipping SSL certificate configuration."
+    fi
 }
 
 get_domain_root() {
@@ -276,6 +283,11 @@ fi
 read -p "Do you want to create new domain? (yes/no): " DO_CREATE_NEW_DOMAIN
 if [[ "$DO_CREATE_NEW_DOMAIN" == "yes" ]]; then
     create_new_domain
+fi
+
+read -p "Do you want to configure an SSL certificate for custom domain? [yes/no]: " SSL_CHOICE_2
+if [ "$SSL_CHOICE_2" == "yes" ]; then
+    ssl_cert
 fi
 
 read -p "Do you want to install PHP? (yes/no): " DO_PHP
