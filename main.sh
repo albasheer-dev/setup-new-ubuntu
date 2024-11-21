@@ -31,7 +31,7 @@ create_user() {
     echo "Creating public_html directory for $USERNAME" >&2
     sudo mkdir -p "/home/$USERNAME/public_html"
     echo "Setting permissions for user home and public_html" >&2
-    sudo chmod 755 "/home/$USERNAME"
+    sudo chmod 711 "/home/$USERNAME"
     sudo chmod 755 "/home/$USERNAME/public_html"
     sudo chown $USERNAME:$USERNAME "/home/$USERNAME/public_html"
 }
@@ -287,6 +287,26 @@ system_cleanup() {
     echo "System cleanup complete." >&2
 }
 
+configure_firewall() {
+    echo "Configuring UFW firewall..."
+    sudo ufw allow OpenSSH
+    sudo ufw enable
+    sudo ufw allow https
+    echo "Firewall configured successfully."
+}
+
+install_fail2ban() {
+    sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
+        # sudo nano jail.local
+        # sudo systemctl enable fail2ban
+        # sudo systemctl start fail2ban
+
+    # To list all banned IPs across all active jails, use:
+        # sudo fail2ban-client banned
+        # sudo fail2ban-client status
+        # sudo fail2ban-client status sshd
+}
+
 # Main script logic
 echo "Updating and upgrading the system..."
 sudo apt update && sudo apt upgrade -y
@@ -349,6 +369,12 @@ if [[ "$DO_CLEANUP" == "yes" ]]; then
     system_cleanup
 fi
 
+read -p "Do you want to configure the firewall? (yes/no): " DO_FIREWALL
+if [[ "$DO_FIREWALL" == "yes" ]]; then
+    configure_firewall
+fi
+
+
 echo "Setup complete. Thank you!" 
 
 
@@ -372,15 +398,9 @@ echo "Setup complete. Thank you!"
 # rsync -avz --progress /home/username/ user@new_server:/home/username/ 
 # scp database_name.sql user@new_server:/path/to/destination
 
-# configure_firewall() {
-#     echo "Configuring UFW firewall..."
-#     sudo ufw allow OpenSSH
-#     sudo ufw allow 'Apache Full'
-#     sudo ufw enable
-#     echo "Firewall configured successfully."
-# }
 
-# read -p "Do you want to configure the firewall? (yes/no): " DO_FIREWALL
-# if [[ "$DO_FIREWALL" == "yes" ]]; then
-#     configure_firewall
-# fi
+
+
+
+
+# sudo chown -R ardv:ardv /home/ardv/public_html
