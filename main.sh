@@ -77,7 +77,7 @@ create_new_domain() {
     USER_VHOST_CONF="/etc/apache2/sites-available/$DOMAIN_NAME.conf"
 
     # تحديد إذا ما كان الدومين هو subdomain أم لا
-    DOMAIN_ROOT=$(echo "$DOMAIN_NAME" | awk -F. '{if (NF>2) print $(NF-1)"."$NF; else print $0}')
+    DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
 
     if [ ! -f "$USER_VHOST_CONF" ]; then
         echo "Creating virtual host configuration for $USERNAME..."
@@ -114,6 +114,27 @@ EOL
 
     echo "Enabling the virtual host for $DOMAIN_NAME and restarting Apache..."
     sudo a2ensite "$DOMAIN_NAME.conf"
+
+
+    sudo systemctl restart apache2
+}
+
+get_domain_root() {
+    local domain_name=$1
+    echo "$domain_name" | awk -F. '{if (NF>2) print $(NF-1)"."$NF; else print $0}'
+}
+
+ssl_cert() {
+    DOMAIN_ROOT=$(get_domain_root "$DOMAIN_NAME")
+    
+    sudo apache2ctl configtest
+    sudo apt install certbot python3-certbot-apache
+    if [ "$DOMAIN_NAME" == "$DOMAIN_ROOT" ]; then
+        sudo certbot --apache -d "$DOMAIN_NAME" -d "www.$DOMAIN_NAME"
+    else
+        sudo certbot --apache -d "$DOMAIN_NAME"
+    fi
+    
     sudo systemctl restart apache2
 }
 
@@ -271,11 +292,6 @@ fi
 
 echo "Setup complete. Thank you!" 
 
-
-# sudo apache2ctl configtest
-# sudo apt install certbot python3-certbot-apache
-# sudo certbot --apache -d albasheer.dev -d www.albasheer.dev
-# sudo systemctl restart apache2
 
 # this is in .htaccess in the same public_html
 # <IfModule mime_module>
