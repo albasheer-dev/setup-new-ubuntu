@@ -233,16 +233,24 @@ install_node() {
 
 # Function to install MariaDB
 install_mariadb() {
+curl -fsSL https://mariadb.org/mariadb_release_signing_key.asc | sudo tee /etc/apt/trusted.gpg.d/mariadb.asc
+
     request_parameter "MARIADB_VERSION" "Enter MariaDB version"
     echo "Installing MariaDB version $MARIADB_VERSION..." >&2
     sudo apt install software-properties-common -y
-    sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
-    sudo add-apt-repository "deb http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
+    sudo apt install -y gnupg
+    sudo wget "https://mariadb.org/mariadb-release.org/mariadb-$MARIADB_VERSION-repo.gpg" -O /etc/apt/trusted.gpg.d/mariadb.gpg
+    sudo wget "https://downloads.mariadb.com/MariaDB/mariadb-$MARIADB_VERSION/repo/ubuntu/mariadb-$MARIADB_VERSION.list" -O "/etc/apt/sources.list.d/mariadb-$MARIADB_VERSION.list"
+
+    # sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
+    # sudo add-apt-repository "deb http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
     if ! sudo apt update; then
         echo "Failed to update package list. Exiting." >&2
         exit 1
     fi
     sudo apt install -y mariadb-server mariadb-client
+    sudo systemctl start mariadb
+    sudo systemctl enable mariadb
     sudo mysql_secure_installation
     echo "MariaDB installed and secured."
 }
