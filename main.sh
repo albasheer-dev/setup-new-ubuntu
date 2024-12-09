@@ -237,7 +237,7 @@ install_mariadb() {
     echo "Installing MariaDB version $MARIADB_VERSION..." >&2
     sudo apt install software-properties-common -y
     sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
-    sudo add-apt-repository "deb [arch=amd64,arm64,ppc64el] http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
+    sudo add-apt-repository "deb http://mirror.i3d.net/pub/mariadb/repo/$MARIADB_VERSION/ubuntu $(lsb_release -cs) main" -y
     if ! sudo apt update; then
         echo "Failed to update package list. Exiting." >&2
         exit 1
@@ -379,11 +379,17 @@ echo "Setup complete. Thank you!"
 
 
 # this is in .htaccess in the same public_html
-# <IfModule mime_module>
+# <IfModule mod_rewrite.c>
 #   RewriteEngine On
-#   RewriteCond %{HTTP_HOST} !^albasheer\.dev$ [NC]
-#   RewriteCond %{HTTP_HOST} !^www\.albasheer\.dev$ [NC]
-#   RewriteRule ^ - [F]
+
+  # Allow only specified domains
+  # RewriteCond %{HTTP_HOST} !^albasheer\.dev$ [NC]
+  # RewriteCond %{HTTP_HOST} !^www\.albasheer\.dev$ [NC]
+  # RewriteCond %{HTTP_HOST} !^sub\.albasheer\.dev$ [NC]
+  # RewriteCond %{HTTP_HOST} !^www\.sub\.albasheer\.dev$ [NC]
+  # RewriteRule ^ - [F]
+
+  # Set default index files
 #   DirectoryIndex index.php index.html
 # </IfModule>
 
