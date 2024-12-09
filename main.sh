@@ -304,6 +304,7 @@ configure_firewall() {
 }
 
 install_fail2ban() {
+    sudo apt install fail2ban -y
     sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
         # sudo nano jail.local
         # sudo systemctl enable fail2ban
@@ -404,6 +405,8 @@ echo "Setup complete. Thank you!"
 # to use this file 
 # chmod +x setup_server.sh
 # ./setup_server.sh
+
+# sudo apt install htop -y
 
 # rsync -avz --progress /home/username/ user@new_server:/home/username/ 
 
