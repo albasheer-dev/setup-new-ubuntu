@@ -420,3 +420,8 @@ echo "Setup complete. Thank you!"
 # sudo nano /etc/hosts
 # hostnamectl
 # sudo reboot
+
+# sql 
+# CREATE USER 'new_user'@'localhost' IDENTIFIED BY 'password';
+# GRANT ALL PRIVILEGES ON mydatabase.* TO 'new_user'@'localhost';
+# FLUSH PRIVILEGES;
