@@ -316,6 +316,25 @@ install_fail2ban() {
         # sudo fail2ban-client status sshd
 }
 
+auto_renew_cert() {
+    # Check if UFW is active
+    if sudo ufw status | grep -q "Status: active"; then
+        echo "UFW is active. Configuring rules..."
+        sudo ufw allow http
+        sudo ufw allow https
+        sudo ufw reload
+    else
+        echo "UFW is not active. Skipping firewall configuration."
+    fi
+
+    # Ensure cronjobs.sh has execution permission
+    sudo chmod +x ./cronjobs.sh
+
+    # Start cronjobs.sh to handle all SSL renewals
+    /bin/bash ./cronjobs.sh
+}
+
+
 # Main script logic
 echo "Updating and upgrading the system..."
 sudo apt update && sudo apt upgrade -y
@@ -346,6 +365,11 @@ read -p "Do you want to configure an SSL certificate for custom domain? [yes/no]
 if [ "$SSL_CHOICE_2" == "yes" ]; then
     read -p "Enter your coustom domain name !" CUSTOM_DOMAIN_NAME
     ssl_cert "$CUSTOM_DOMAIN_NAME"
+fi
+
+read -p "Do you want to renew a SSL certificate for domains? [yes/no]: " DO_RENEW_DOMAIN
+if [[ "$DO_RENEW_DOMAIN" == "yes" ]]; then
+    auto_renew_cert
 fi
 
 read -p "Do you want to install PHP? (yes/no): " DO_PHP
@@ -383,7 +407,7 @@ if [[ "$DO_FIREWALL" == "yes" ]]; then
     configure_firewall
 fi
 
-
+sudo ufw deny http
 echo "Setup complete. Thank you!" 
 
 

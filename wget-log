@@ -1,0 +1,6 @@
+--2024-12-17 16:41:43--  https://mariadb.org/mariadb-release.org/mariadb-10.6-repo.gpg
+Resolving mariadb.org (mariadb.org)... 49.13.58.252, 2a01:4f8:c013:189f::1
+Connecting to mariadb.org (mariadb.org)|49.13.58.252|:443... connected.
+HTTP request sent, awaiting response... 404 Not Found
+2024-12-17 16:41:43 ERROR 404: Not Found.
+
