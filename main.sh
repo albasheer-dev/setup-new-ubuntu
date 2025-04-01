@@ -2,6 +2,7 @@
 LOG_FILE="/var/log/setup_script.log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 # Variables to store user input
+SUDO_USERNAME=""
 USERNAME=""
 DOMAIN_NAME=""
 PHP_VERSION=""
@@ -21,6 +22,49 @@ request_parameter() {
     fi
 }
 
+create_user_with_ssh() {
+    request_parameter "SUDO_USERNAME" "Enter username"
+
+    echo "Creating user account: $SUDO_USERNAME" >&2
+    sudo adduser --quiet --disabled-password --gecos "" $SUDO_USERNAME
+    sudo usermod -aG sudo $SUDO_USERNAME
+    echo "User $SUDO_USERNAME created and added to sudo group."
+
+    # إعداد مجلد .ssh مع الصلاحيات الصحيحة
+    sudo mkdir -p /home/$SUDO_USERNAME/.ssh
+    sudo chmod 700 /home/$SUDO_USERNAME/.ssh
+
+    # إنشاء ملف authorized_keys مع الصلاحيات الصحيحة
+    sudo touch /home/$SUDO_USERNAME/.ssh/authorized_keys
+    sudo chmod 600 /home/$SUDO_USERNAME/.ssh/authorized_keys
+
+    # تغيير ملكية المجلد والملفات إلى المستخدم الجديد
+    sudo chown -R $SUDO_USERNAME:$SUDO_USERNAME /home/$SUDO_USERNAME/.ssh
+
+    # طلب مفتاح SSH من المستخدم وإضافته إلى authorized_keys
+    read -p "Paste the SSH Public Key for $SUDO_USERNAME: " SSH_KEY
+    echo "$SSH_KEY" | sudo tee -a /home/$SUDO_USERNAME/.ssh/authorized_keys > /dev/null
+
+    echo "SSH key added for $SUDO_USERNAME."
+    echo "Now you can log in as: ssh $SUDO_USERNAME@<server-ip>"
+
+    # تعطيل تسجيل الدخول بالروت
+    echo "Disabling root login..."
+    sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+
+    # تعطيل تسجيل الدخول بكلمة المرور
+    echo "Disabling password authentication..."
+    sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sudo sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+
+    # إعادة تشغيل SSH لتطبيق التغييرات
+    echo "Restarting SSH service..."
+    sudo systemctl restart ssh
+
+    echo "Setup complete. Root login and password authentication are disabled."
+}
+
+
 # Function to create a user
 create_user() {
     request_parameter "USERNAME" "Enter username"
@@ -28,6 +72,12 @@ create_user() {
     sudo adduser --quiet $USERNAME
     echo "Granting sudo privileges to $USERNAME" >&2
     sudo usermod -aG sudo $USERNAME
+}
+
+
+# Function to create a user folders
+create_user_folders() {
+    request_parameter "USERNAME" "Enter username"
     echo "Creating public_html directory for $USERNAME" >&2
     sudo mkdir -p "/home/$USERNAME/public_html"
     echo "Setting permissions for user home and public_html" >&2
@@ -341,9 +391,15 @@ sudo apt update && sudo apt upgrade -y
 
 echo "Welcome! Please select the steps you'd like to perform."
 
-read -p "Do you want to create a user and set up directories? (yes/no): " DO_USER
+read -p "Do you want to create a sudo user ? (yes/no): " DO_USER
 if [[ "$DO_USER" == "yes" ]]; then
+    create_user_with_ssh
+fi
+
+read -p "Do you want to create a user and set up directories? (yes/no): " DO_USER_PATH
+if [[ "$DO_USER_PATH" == "yes" ]]; then
     create_user
+    create_user_folders
 fi
 
 read -p "Do you want to install Apache? (yes/no): " DO_APACHE
