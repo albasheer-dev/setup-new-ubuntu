@@ -22,35 +22,22 @@ request_parameter() {
     fi
 }
 
-create_user_with_ssh() {
-    request_parameter "SUDO_USERNAME" "Enter username"
-
-    echo "Creating user account: $SUDO_USERNAME" >&2
-    sudo adduser --quiet --disabled-password --gecos "" $SUDO_USERNAME
-    sudo usermod -aG sudo $SUDO_USERNAME
-    echo "User $SUDO_USERNAME created and added to sudo group."
-
-    # إعداد مجلد .ssh مع الصلاحيات الصحيحة
-    sudo mkdir -p /home/$SUDO_USERNAME/.ssh
-    sudo chmod 700 /home/$SUDO_USERNAME/.ssh
-
+root_with_ssh() {
+    
     # إنشاء ملف authorized_keys مع الصلاحيات الصحيحة
-    sudo touch /home/$SUDO_USERNAME/.ssh/authorized_keys
-    sudo chmod 600 /home/$SUDO_USERNAME/.ssh/authorized_keys
-
-    # تغيير ملكية المجلد والملفات إلى المستخدم الجديد
-    sudo chown -R $SUDO_USERNAME:$SUDO_USERNAME /home/$SUDO_USERNAME/.ssh
+    sudo touch /root/.ssh/authorized_keys
+    sudo chmod 600 /root/.ssh/authorized_keys
 
     # طلب مفتاح SSH من المستخدم وإضافته إلى authorized_keys
-    read -p "Paste the SSH Public Key for $SUDO_USERNAME: " SSH_KEY
-    echo "$SSH_KEY" | sudo tee -a /home/$SUDO_USERNAME/.ssh/authorized_keys > /dev/null
+    read -p "Paste the SSH Public Key for root: " SSH_KEY
+    echo "$SSH_KEY" | sudo tee -a /root/.ssh/authorized_keys > /dev/null
 
-    echo "SSH key added for $SUDO_USERNAME."
-    echo "Now you can log in as: ssh $SUDO_USERNAME@<server-ip>"
+    echo "SSH key added for root."
+    echo "Now you can log in as: ssh root@<server-ip>"
 
     # تعطيل تسجيل الدخول بالروت
-    echo "Disabling root login..."
-    sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+    # echo "Disabling root login..."
+    # sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
 
     # تعطيل تسجيل الدخول بكلمة المرور
     echo "Disabling password authentication..."
