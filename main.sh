@@ -23,7 +23,9 @@ request_parameter() {
 }
 
 root_with_ssh() {
-    
+
+    sudo mkdir -p /root/.ssh
+    sudo chmod 700 /root/.ssh
     # إنشاء ملف authorized_keys مع الصلاحيات الصحيحة
     sudo touch /root/.ssh/authorized_keys
     sudo chmod 600 /root/.ssh/authorized_keys
@@ -380,7 +382,7 @@ echo "Welcome! Please select the steps you'd like to perform."
 
 read -p "Do you want to create a sudo user ? (yes/no): " DO_USER
 if [[ "$DO_USER" == "yes" ]]; then
-    create_user_with_ssh
+    root_with_ssh
 fi
 
 read -p "Do you want to create a user and set up directories? (yes/no): " DO_USER_PATH
