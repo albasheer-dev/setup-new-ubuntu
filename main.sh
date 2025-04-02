@@ -23,34 +23,12 @@ request_parameter() {
 }
 
 root_with_ssh() {
+    # Ensure manage_root_keys.sh has execution permission
+    sudo chmod +x ./manage_root_keys.sh
 
-    sudo mkdir -p /root/.ssh
-    sudo chmod 700 /root/.ssh
-    # إنشاء ملف authorized_keys مع الصلاحيات الصحيحة
-    sudo touch /root/.ssh/authorized_keys
-    sudo chmod 600 /root/.ssh/authorized_keys
-
-    # طلب مفتاح SSH من المستخدم وإضافته إلى authorized_keys
-    read -p "Paste the SSH Public Key for root: " SSH_KEY
-    echo "$SSH_KEY" | sudo tee -a /root/.ssh/authorized_keys > /dev/null
-
-    echo "SSH key added for root."
-    echo "Now you can log in as: ssh root@<server-ip>"
-
-    # تعطيل تسجيل الدخول بالروت
-    # echo "Disabling root login..."
-    # sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-
-    # تعطيل تسجيل الدخول بكلمة المرور
-    echo "Disabling password authentication..."
-    sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-    sudo sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-
-    # إعادة تشغيل SSH لتطبيق التغييرات
-    echo "Restarting SSH service..."
-    sudo systemctl restart ssh
-
-    echo "Setup complete. Root login and password authentication are disabled."
+    # Start manage_root_keys.sh to handle all root ssh keys
+    /bin/bash ./manage_root_keys.sh
+    #source manage_root_keys.sh
 }
 
 
