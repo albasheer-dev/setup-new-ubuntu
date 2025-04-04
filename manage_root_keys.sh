@@ -8,18 +8,6 @@ sudo chmod 700 /root/.ssh
 # إنشاء ملف authorized_keys مع الصلاحيات الصحيحة
 sudo touch /root/.ssh/authorized_keys
 sudo chmod 600 /root/.ssh/authorized_keys
-# طلب مفتاح SSH من المستخدم وإضافته إلى authorized_keys
-# تعطيل تسجيل الدخول بالروت
-# echo "Disabling root login..."
-# sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
-# تعطيل تسجيل الدخول بكلمة المرور
-echo "Disabling password authentication..."
-sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-sudo sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
-# إعادة تشغيل SSH لتطبيق التغييرات
-echo "Restarting SSH service..."
-sudo systemctl restart ssh
-echo "Setup complete. Root login and password authentication are disabled."
 
 
 add_root_key() {
@@ -63,7 +51,25 @@ remove_root_key() {
     fi
 }
 
+read -p "Do you want to Disable root login (yes/no): " ROOT_LOGIN
+if [[ "$ROOT_LOGIN" == "yes" ]]; then
+    # تعطيل تسجيل الدخول بالروت
+    echo "Disabling root login..."
+    sudo sed -i 's/^PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config
+fi
 
+read -p "Do you want to Disable password authentication login (yes/no): " ROOT_LOGIN
+if [[ "$ROOT_LOGIN" == "yes" ]]; then
+    # تعطيل تسجيل الدخول بكلمة المرور
+    echo "Disabling password authentication..."
+    sudo sed -i 's/^#PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sudo sed -i 's/^PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+fi
+
+# إعادة تشغيل SSH لتطبيق التغييرات
+echo "Restarting SSH service..."
+sudo systemctl restart ssh
+echo "Setup complete. Root login and password authentication are disabled."
 
 read -p "Do you want to add Key (yes/no): " ADD_KEY
 if [[ "$ADD_KEY" == "yes" ]]; then
